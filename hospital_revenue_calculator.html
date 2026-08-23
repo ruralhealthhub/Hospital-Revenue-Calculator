@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hospital Revenue Calculator — TORCh Price Study</title>
+<style>
+  :root{
+    --ink:#111111; --muted:#7a857c; --paper:#f6f7f4; --card:#ffffff;
+    --accent:#369739; --accentdk:#27732a; --rx:#F7960F; --line:#e2e5dd;
+    --rowhover:#eef5ee; --gen:#8d8578;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--paper);}
+  body{
+    font-family:'Georgia','Times New Roman',serif; color:var(--ink);
+    padding:clamp(10px,3vw,28px);
+  }
+  .page{
+    background:var(--card); max-width:1080px; margin:0 auto;
+    padding:clamp(20px,4vw,44px); border:2px solid var(--ink);
+    border-radius:16px; box-shadow:0 10px 40px -16px rgba(0,0,0,.35);
+  }
+  header{border-bottom:3px solid var(--accent); padding-bottom:22px; margin-bottom:26px}
+  .kicker{font-family:'Courier New',monospace;font-size:12px;letter-spacing:3px;
+    color:var(--accent);font-weight:700;text-transform:uppercase}
+  h1{font-size:clamp(26px,4.6vw,40px); margin:.3em 0 .2em; line-height:1.1}
+  .sub{color:var(--muted); font-size:15px; line-height:1.55; max-width:70ch}
+
+  .secnum{font-family:'Courier New',monospace;color:var(--accent);font-weight:700;margin-right:8px}
+  h2{font-size:19px;margin:34px 0 12px;padding-bottom:7px;border-bottom:1.5px solid var(--line)}
+
+  label.f{display:block;font-family:'Courier New',monospace;font-size:11px;
+    letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
+    font-weight:700;margin-bottom:6px}
+  select,input[type=number]{
+    font-family:'Georgia',serif;font-size:16px;padding:10px 12px;
+    border:1.5px solid var(--line);border-radius:8px;background:#fff;
+    color:var(--ink);width:100%}
+  select:focus,input:focus{outline:3px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+  select.hosp{font-size:18px;font-weight:700;border:2px solid var(--ink);padding:13px 12px}
+
+  .grid{display:grid;gap:16px}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+
+  .segwrap{display:flex;gap:0;border:1.5px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg{flex:1;padding:10px 8px;background:#fff;border:0;cursor:pointer;
+    font-family:'Courier New',monospace;font-size:11.5px;font-weight:700;
+    letter-spacing:.05em;text-transform:uppercase;color:var(--muted);transition:.15s}
+  .seg:hover{background:var(--rowhover)}
+  .seg[aria-pressed=true]{background:var(--accent);color:#fff}
+  .seg:focus-visible{outline:3px solid var(--ink);outline-offset:-3px}
+
+  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:14.5px}
+  th{font-family:'Courier New',monospace;font-size:10.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted);text-align:right;
+    padding:9px 8px;border-bottom:2px solid var(--ink);font-weight:700;white-space:nowrap}
+  th.l,td.l{text-align:left}
+  td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:right;
+    font-variant-numeric:tabular-nums}
+  tr.off td{opacity:.34}
+  tbody tr:hover{background:var(--rowhover)}
+  .catname{font-weight:700}
+  .cptlist{font-family:'Courier New',monospace;font-size:10.5px;color:var(--muted);
+    margin-top:3px;line-height:1.4;max-width:34ch}
+  .badge{display:inline-block;font-family:'Courier New',monospace;font-size:9.5px;
+    font-weight:700;letter-spacing:.06em;padding:2px 6px;border-radius:4px;
+    text-transform:uppercase;vertical-align:2px}
+  .b-study{background:var(--accent);color:#fff}
+  .b-gen{background:#efece6;color:var(--gen);border:1px solid #e0dbd1}
+  .b-rx{background:var(--rx);color:#fff}
+  .b-warn{background:#fff3e0;color:#a35a00;border:1px solid var(--rx)}
+  .revert{font-family:'Courier New',monospace;font-size:10px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.05em;background:none;border:0;padding:2px 0;
+    color:var(--accentdk);cursor:pointer;text-decoration:underline}
+  .revert:hover{color:var(--rx)}
+  td input[type=number]{width:96px;padding:6px 8px;font-size:14px;text-align:right}
+  .chk{width:17px;height:17px;accent-color:var(--accent);cursor:pointer}
+
+  tfoot td{border-top:2px solid var(--ink);border-bottom:0;font-weight:700;padding-top:12px}
+
+  .totals{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:30px}
+  .tcard{border:2px solid var(--ink);border-radius:12px;padding:18px}
+  .tcard.hero{background:linear-gradient(135deg,var(--accent),var(--accentdk));
+    color:#fff;border-color:var(--accentdk)}
+  .tlab{font-family:'Courier New',monospace;font-size:10.5px;letter-spacing:.12em;
+    text-transform:uppercase;opacity:.72;font-weight:700}
+  .tval{font-size:clamp(22px,3.4vw,32px);font-weight:700;margin-top:6px;
+    font-variant-numeric:tabular-nums}
+  .tmeta{font-size:12px;opacity:.75;margin-top:5px}
+
+  .note{background:var(--paper);border-left:3px solid var(--accent);
+    padding:13px 16px;font-size:13px;line-height:1.6;margin-top:16px;border-radius:0 8px 8px 0}
+  .note.warn{border-left-color:var(--rx)}
+  .note strong{font-weight:700}
+
+  .cov{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .pill{font-family:'Courier New',monospace;font-size:10.5px;font-weight:700;
+    padding:4px 9px;border-radius:20px;border:1.5px solid var(--line);color:var(--muted)}
+  .pill.on{border-color:var(--accent);color:var(--accentdk);background:var(--rowhover)}
+
+  footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);
+    font-size:11.5px;color:var(--muted);line-height:1.6}
+  button.reset{font-family:'Courier New',monospace;font-size:11px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.06em;background:none;border:1.5px solid var(--line);
+    padding:7px 12px;border-radius:6px;cursor:pointer;color:var(--muted)}
+  button.reset:hover{border-color:var(--accent);color:var(--accentdk)}
+  @media (max-width:760px){
+    .g3,.g2,.totals{grid-template-columns:1fr}
+    .hide-sm{display:none}
+    table{font-size:13px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <div class="kicker">Rural Health Hub · TORCh Price Study</div>
+  <h1>Hospital-Specific Revenue Calculator</h1>
+  <p class="sub">Pick a hospital to price ancillary revenue using <strong>its own negotiated
+  rates</strong> from the TORCh price study. Categories the study doesn't cover fall back to the
+  generic model defaults, and every rate stays editable.</p>
+</header>
+
+<div class="totals" id="totalsTop">
+  <div class="tcard"><div class="tlab">Ancillary services</div>
+    <div class="tval" id="c1">—</div><div class="tmeta" id="c1m"></div></div>
+  <div class="tcard"><div class="tlab">340B pharmacy</div>
+    <div class="tval" id="c2">—</div><div class="tmeta">Generic margins</div></div>
+  <div class="tcard hero"><div class="tlab">Total annual revenue</div>
+    <div class="tval" id="c3">—</div><div class="tmeta" id="c3m"></div></div>
+</div>
+
+<h2><span class="secnum">01</span>Choose a hospital</h2>
+<div class="grid g2">
+  <div>
+    <label class="f" for="hosp">Hospital</label>
+    <select id="hosp" class="hosp"></select>
+  </div>
+  <div>
+    <label class="f" for="basis">Rate basis</label>
+    <div class="segwrap" id="basis">
+      <button class="seg" data-v="neg" aria-pressed="true">Their negotiated rate</button>
+      <button class="seg" data-v="up" aria-pressed="false">Best in market</button>
+    </div>
+    <label class="f" for="setting" style="margin-top:14px">Setting</label>
+    <div class="segwrap" id="setting">
+      <button class="seg" data-v="op" aria-pressed="true">Outpatient only</button>
+      <button class="seg" data-v="all" aria-pressed="false">Outpatient + inpatient</button>
+    </div>
+  </div>
+</div>
+<div class="cov" id="cov"></div>
+<div class="note" id="covnote"></div>
+
+<h2><span class="secnum">02</span>Volume assumptions</h2>
+<div class="note"><strong>Volume is what the hospital buys.</strong> Clinic time is purchased by the
+month at <strong>2 visits per hour</strong>. The contract starts at <strong>32 hours (64 visits)
+per month</strong> — edit either field and the other follows.</div>
+<div class="grid g3" style="margin-top:14px">
+  <div><label class="f" for="hours">Hours purchased / month</label>
+    <input type="number" id="hours" value="32" min="0" step="1">
+    <div class="cptlist" style="margin-top:5px">32 hours = contract minimum</div></div>
+  <div><label class="f" for="vpm">Visits / month</label>
+    <input type="number" id="vpm" value="64" min="0" step="2">
+    <div class="cptlist" style="margin-top:5px">2 visits per clinical hour</div></div>
+  <div><label class="f">Visits / year</label>
+    <div style="font-size:26px;font-weight:700;padding-top:6px" id="visits">—</div>
+    <div class="cptlist" style="margin-top:2px" id="visitsmeta"></div></div>
+</div>
+<div class="note warn"><strong>Order mix is still generic.</strong> The workbook contains rates only,
+no order volumes, so orders-per-visit below comes from the generic model (per 2,648 baseline visits)
+and is identical for every hospital.</div>
+
+<h2><span class="secnum">03</span>Ancillary services revenue</h2>
+<table>
+  <thead><tr>
+    <th class="l" style="width:34%">Service category</th>
+    <th class="hide-sm">Orders / visit</th>
+    <th>Rate</th>
+    <th class="hide-sm">Proj. orders</th>
+    <th>Projected revenue</th>
+    <th style="width:34px"></th>
+  </tr></thead>
+  <tbody id="svcbody"></tbody>
+  <tfoot><tr>
+    <td class="l">Services subtotal</td><td class="hide-sm"></td><td></td>
+    <td class="hide-sm" id="svcorders"></td><td id="svctot"></td><td></td>
+  </tr></tfoot>
+</table>
+<div class="note warn" id="svcwarn" style="display:none"></div>
+<div style="margin-top:12px"><button class="reset" id="resetsvc">Reset rates to study values</button></div>
+
+<h2><span class="secnum">04</span>340B pharmacy margin</h2>
+<div class="note warn"><strong>Always generic.</strong> The price study covers procedure and imaging
+CPTs, not drug acquisition or dispensing margin, so these three lines use the model defaults for
+every hospital. Edit them to your facility's actual 340B margin.</div>
+<table>
+  <thead><tr>
+    <th class="l" style="width:34%">Category</th>
+    <th class="hide-sm">Orders / visit</th>
+    <th>Margin / order</th>
+    <th class="hide-sm">Proj. orders</th>
+    <th>Projected margin</th>
+    <th style="width:34px"></th>
+  </tr></thead>
+  <tbody id="rxbody"></tbody>
+  <tfoot><tr>
+    <td class="l">Pharmacy subtotal</td><td class="hide-sm"></td><td></td>
+    <td class="hide-sm" id="rxorders"></td><td id="rxtot"></td><td></td>
+  </tr></tfoot>
+</table>
+
+<div class="note" id="summary" style="margin-top:26px"></div>
+
+<footer id="foot"></footer>
+
+</div>
+
+<script>
+const HOSPITALS = [{"n":"ANSON GENERAL HOSPITAL","c":{"proc":[283.93,261.73,1407.85,1585.63,28,40,["0121","10121","11400","11750","11976","20600","25605"]],"lab":[328.5,295.93,701.5,657.36,8,15,["80053","87633"]],"other":[274.0,251.13,415.0,488.0,9,15,["94060","94761"]]}},{"n":"CHILDRESS REGIONAL MEDICAL CENTER (CCN 450369)","c":{"sleep":[1319.5,1273.29,5882.5,5633.57,8,14,["95810","95811"]],"proc":[1291.04,1356.03,3916.61,3949.97,23,39,["10121","20550","20552","20605","25605","36556","54150"]],"ct":[972.5,950.71,3687.75,3404.57,4,7,["73701"]]}},{"n":"COLEMAN COUNTY MEDICAL CENTER (CCN 451347)","c":{"ct":[795.47,802.51,2801.74,3398.51,19,37,["70496","70498","71270","71275","72131","74176","74177","74178"]],"proc":[56.5,61.5,505.0,369.0,2,4,["51702"]],"lab":[8.25,8.29,31.75,34.14,4,7,["36415"]]}},{"n":"COLLINGSWORTH GENERAL HOSPITAL (CCN 451355)","c":{"ct":[975.5,975.5,1604.83,1604.83,6,12,["70450","74177"]],"proc":[204.0,204.0,1010.0,1010.0,1,2,["12001"]]}},{"n":"CUERO REGIONAL HOSPITAL (CCN 450597)","c":{"lab":[13.0,1428.0,33.0,2138.5,1,2,["80185","81162"]],"ct":[null,960.33,null,1610.0,0,3,["70482","72132","77012"]]}},{"n":"FAITH COMMUNITY HOSPITAL (CCN 450241)","c":{"us":[115.0,99.0,534.67,602.4,3,5,["76805"]],"proc":[64.25,66.43,250.33,218.0,4,7,["96366"]]}},{"n":"FREESTONE MEDICAL CENTER (CCN 450658)","c":{"mri":[2074.58,2004.15,6717.56,6201.18,12,20,["72156","72157","72158","74183"]],"proc":[445.83,417.6,1829.33,1844.33,12,15,["25605","32554","51701","69210"]],"ct":[839.75,1377.14,3961.0,4066.0,4,7,["72130","74174"]]}},{"n":"GOODALL-WITCHER HEALTHCARE (CCN 451385)","c":{"ct":[461.4,464.0,1914.5,2869.13,20,30,["72127","73206","73702","73706","74170"]],"mri":[751.6,755.8,2213.7,3011.07,20,30,["70543","71552","72197","73221","73223"]]}},{"n":"HAMILTON GENERAL HOSPITAL (CCN 451392)","c":{"ct":[null,1747.83,null,5482.17,0,6,["72133","73202","73706","74174","74177","74178"]],"sleep":[450.0,1462.5,4829.0,5608.5,1,2,["95810"]],"mri":[null,1940.33,null,4797.33,0,3,["73719","73720","73723"]]}},{"n":"HARDEMAN COUNTY MEMORIAL HOSPITAL (CCN 451352)","c":{"proc":[862.3,916.25,2951.9,3075.79,10,20,["10121","36556"]],"mri":[1283.03,1284.62,3001.0,2934.1,30,58,["72157","72158","72197","73220","73723","74183"]],"sleep":[1710.6,1710.6,2654.0,2654.0,5,10,["95811"]]}},{"n":"HASKELL MEMORIAL HOSPITAL (CCN 451341)","c":{"proc":[136.67,136.67,1064.78,1064.78,27,27,["10121","11104","11400","11750","11976","20550","20552","20600","20610"]],"other":[64.67,64.67,673.33,673.33,3,3,["94060"]]}},{"n":"HEMPHILL COUNTY HOSPITAL (CCN 671301)","c":{"ct":[916.0,916.0,1242.0,1242.0,2,2,["70450-TC"]]}},{"n":"HENDRICK MEDICAL CENTER (CCN 450229)","c":{"mri":[3512.92,3569.96,5213.41,5888.57,36,57,["70542","70543","70545","70548","70549","71551","72197"]],"ct":[4049.6,3890.75,6521.86,6572.4,15,24,["70492","72133","74174"]]}},{"n":"IRAAN GENERAL HOSPITAL","c":{"ct":[2545.67,2545.67,6565.29,6565.29,9,9,["72133","74174","74178"]],"proc":[264.0,264.0,5812.75,5812.75,4,4,["10121","21315"]],"mri":[4311.4,4311.4,7476.8,7476.8,15,15,["70543","70549","70553","72158","73723"]]}},{"n":"KIMBLE HOSPITAL (CCN 451306)","c":{"ct":[1421.27,1427.25,3902.04,4002.69,26,51,["70491","70496","71260","71275","72125","72131","74174","74176","74177"]]}},{"n":"LAMB HEALTHCARE CENTER","c":{"proc":[831.45,831.45,3222.03,3222.03,38,38,["11976","20550","20553","36556","43260","45330","45384","G0121"]],"mri":[1119.33,1119.33,4122.89,4122.89,9,9,["72198","74182"]]}},{"n":"LIMESTONE MEDICAL CENTER (CCN 451303)","c":{"proc":[760.0,1030.95,4827.13,4564.39,15,21,["10121","12032","13100","69210"]],"mri":[2692.32,2933.86,5603.36,5659.14,25,35,["72149","72156","72157","72158","74183"]],"ct":[2125.6,2297.14,4571.0,4298.0,5,7,["74174"]]}},{"n":"LLANO REGIONAL HOSPITAL (CCN 451396)","c":{"proc":[119.33,119.33,3908.67,3908.67,3,3,["36561"]],"ct":[883.11,883.11,2656.67,2656.67,9,9,["74174","74177","74178"]],"mri":[1182.67,1182.67,2740.67,2740.67,15,15,["70549","72156","72157","72197","73220"]],"sleep":[2542.0,2542.0,3751.0,3751.0,3,3,["95811"]]}},{"n":"LYNN COUNTY HOSPITAL DISTRICT (CCN 451351)","c":{"mri":[1168.47,1153.05,5294.28,5776.03,19,37,["70543","70544","70553","72156","73222"]],"ct":[942.6,942.6,5033.45,5285.52,20,40,["70492","72127","74176","74177","74178"]]}},{"n":"MEDICAL ARTS HOSPITAL (CCN 450489)","c":{"proc":[346.2,361.89,9638.8,10230.11,5,9,["36561"]],"ct":[716.2,731.22,5722.2,5725.11,5,9,["74178"]],"mri":[1286.36,1314.5,5846.54,6133.96,28,50,["70542","71552","72158","72197","73723","74183"]],"sleep":[1862.2,1895.44,5778.8,5524.11,5,9,["95811"]]}},{"n":"MEDICAL CENTER HOSPITAL (CCN 450132)","c":{"proc":[1487.1,1382.12,6547.25,7235.58,20,26,["10121","21315","31625","43229","54150","55700"]],"sleep":[1563.75,1846.0,6226.5,6690.4,4,5,["95811"]],"mri":[1288.56,1518.08,5538.89,5921.92,9,12,["70542","70549","73723"]]}},{"n":"MEDINA REGIONAL HOSPITAL (CCN 451330)","c":{"lab":[1070.0,1070.0,3682.67,3682.67,3,3,["81162"]],"mri":[961.29,961.29,2866.57,2866.57,17,17,["70546","70549","71551","71552","73220","73223","73720"]],"ct":[817.5,817.5,2285.0,2285.0,2,2,["74174"]],"proc":[34.5,34.5,126.0,126.0,2,2,["36600"]]}},{"n":"METHODIST SOUTHLAKE MEDICAL CENTER","c":{"proc":[871.22,908.88,6475.59,4658.53,23,43,["10121","13100","21315","27786","36600"]],"mri":[1410.6,1410.6,5128.8,5128.8,5,10,["72156"]],"sleep":[1173.31,1197.87,3943.83,3745.84,13,23,["95810","95811"]],"ct":[1544.0,1544.0,4134.67,3889.67,6,12,["74174","74178"]]}},{"n":"MIDCOAST MEDICAL CENTER CROCKETT","c":{"proc":[117.67,117.67,354.05,354.05,21,21,["11200","11730","12002","20552","58300","58301","69210"]]}},{"n":"NOCONA GENERAL HOSPITAL","c":{"ct":[1480.78,1408.82,2550.95,3930.4,27,45,["71270","71275","72133","73202","73206","73706","74174","74176","74178"]],"sleep":[2112.5,2135.33,4164.5,5301.67,2,3,["95810"]]}},{"n":"NORTH RUNNELS HOSPITAL","c":{"mri":[1418.67,1418.67,2503.08,2503.08,24,24,["70543","70544","70549","71552","72156","72157","72158","72197"]],"proc":[916.67,916.67,1931.67,1931.67,3,3,["25605"]],"ct":[1722.0,1722.0,2285.5,2285.5,3,3,["72133"]]}},{"n":"OTTO KAISER MEMORIAL HOSPITAL (CCN 451364)","c":{"proc":[251.6,890.45,3488.8,7694.5,5,29,["10121","11400","21315","43235","44970","55250"]],"mri":[null,1790.75,null,4311.25,0,4,["70549","70553"]],"ct":[null,82.0,null,2136.0,0,2,["75635"]]}},{"n":"RANKIN COUNTY HOSPITAL DISTRICT (CCN 673460)","c":{"us":[241.39,241.39,1103.88,1103.88,18,18,["76536","76805","76870","76942","93308","93970"]],"proc":[265.5,265.5,977.5,977.5,6,6,["11750","20600","20610"]]}},{"n":"RICE MEDICAL CENTER (CCN 451312)","c":{"proc":[230.3,233.27,746.13,711.58,40,49,["10121","11400","11600","11750","20600","26720","27786","54150","57452","57454"]]}},{"n":"SABINE COUNTY HOSPITAL","c":{"ct":[988.7,988.7,8567.78,9292.88,10,20,["74176","74177","74178"]]}},{"n":"SEMINOLE HOSPITAL DISTRICT (CCN 451358)","c":{"proc":[3259.17,3259.17,7338.17,7338.17,6,6,["44970","47562","54150"]],"ct":[763.0,763.0,5589.0,5589.0,3,3,["74177"]],"mri":[667.64,667.64,1830.27,1830.27,22,22,["70551","70553","72141","72146","72148","72197"]]}},{"n":"SHANNON MEDICAL CENTER (CCN 450571)","c":{"ct":[3852.25,4256.51,5555.29,5751.81,20,35,["74170","74174","74176","74177","74178"]],"mri":[2292.25,2497.86,4357.0,4390.17,4,7,["71550"]],"proc":[2202.69,2101.92,3529.22,3400.4,13,25,["20550","20600","20610","55700"]]}},{"n":"STEPHENS MEMORIAL HOSPITAL (CCN 450498)","c":{"proc":[734.1,693.44,3174.71,3166.8,21,25,["32554","36561","58301","62322"]],"ct":[1067.0,1160.26,3275.5,3518.56,15,19,["71271","72126","72127"]],"xray":[177.67,187.81,534.25,599.42,12,16,["71047","72050"]],"other":[12.0,12.0,259.0,238.0,6,8,["94761"]]}},{"n":"STONEWALL MEMORIAL HOSPITAL (CCN 451318)","c":{"ct":[1445.8,1522.4,5863.29,5859.83,25,30,["70492","72133","74174","74177","74178"]],"mri":[2639.8,2783.83,7677.19,7646.3,20,24,["70543","70549","72158","72197"]],"proc":[2255.0,2255.0,5207.0,5207.0,3,3,["10121"]]}},{"n":"VAL VERDE REGIONAL MEDICAL CENTER","c":{"mri":[2168.61,2469.98,5611.4,5860.58,38,62,["70543","70545","70548","70549","71551","72142","72147","72149"]],"ct":[1782.11,1903.33,4805.5,5074.86,9,15,["72132","72133"]]}},{"n":"WARD MEMORIAL HOSPITAL","c":{"proc":[971.27,971.27,3268.73,3268.73,11,11,["11976","20550","21315","45384"]],"mri":[2982.0,2982.0,6307.38,6307.38,18,18,["70542","70543","70545","70549","71551","72149"]]}},{"n":"WILBARGER GENERAL HOSPITAL (CCN 450584)","c":{"ct":[1400.38,1828.12,5830.62,6332.44,8,16,["74174","74178"]],"mri":[1328.89,1640.43,6051.17,5808.83,28,56,["70543","72157","72158","72197","73220","73723","74183"]],"proc":[3288.0,3474.75,7664.0,6773.6,4,8,["21315"]]}}];
+
+const GENERIC = [
+  {id:"lab",   name:"Laboratory Tests",         orders:9065, rate:13,   note:"Blended common labs (CBC ~$10, CMP ~$14)"},
+  {id:"xray",  name:"X-Ray",                    orders:1159, rate:45,   note:"Global rate, plain film e.g. chest 2-view"},
+  {id:"mri",   name:"MRI / MR Imaging",         orders:311,  rate:1500, note:"Global rate (technical + professional)"},
+  {id:"ct",    name:"CT Scan",                  orders:53,   rate:1100, note:"Global rate"},
+  {id:"us",    name:"Ultrasound",               orders:85,   rate:550,  note:"Global rate, abdomen complete"},
+  {id:"other", name:"Other Diagnostic Studies", orders:308,  rate:270,  note:"Catch-all incl. spirometry/PFT"},
+  {id:"sleep", name:"Sleep Studies",            orders:41,   rate:600,  note:"Attended polysomnography"},
+  {id:"proc",  name:"Procedures (GI + Other)",  orders:46,   rate:1000, note:"Outpatient GI e.g. colonoscopy/EGD"}
+];
+const RX = [
+  {id:"rx_inf", name:"Rx: Infusions",              orders:242,  price:1000},
+  {id:"rx_inj", name:"Rx: Injectables",            orders:569,  price:300},
+  {id:"rx_oral",name:"Rx: Oral / Topical / etc.",  orders:2199, price:45}
+];
+const BASE_VISITS = 2648;
+const VISITS_PER_HOUR = 2;
+const MIN_HOURS_MONTH = 32;
+const MONTHS = 12;
+const ORIGINATION_FEE = 31;
+
+const money = n => n.toLocaleString("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0});
+const money2 = n => n.toLocaleString("en-US",{style:"currency",currency:"USD",maximumFractionDigits:2});
+const num = n => n.toLocaleString("en-US",{maximumFractionDigits:0});
+
+let state = { hosp:0, basis:"neg", setting:"op",
+              overrides:{}, rxOverrides:{}, off:{}, rxOff:{} };
+
+// pick the study rate for a category, or null
+function studyRate(h, catId){
+  const e = h.c[catId]; if(!e) return null;
+  const idx = state.basis==="neg" ? (state.setting==="op"?0:1) : (state.setting==="op"?2:3);
+  const v = e[idx];
+  if(v===null||v===undefined) return null;
+  const n = e[state.setting==="op"?4:5];
+  return {rate:v, n:n, codes:e[6]};
+}
+
+const $ = s => document.querySelector(s);
+
+function buildHospitalList(){
+  const sel = $("#hosp");
+  HOSPITALS.forEach((h,i)=>{
+    const o = document.createElement("option");
+    o.value = i; o.textContent = h.n; sel.appendChild(o);
+  });
+  sel.addEventListener("change", e=>{
+    state.hosp = +e.target.value;
+    state.overrides = {};
+    render();
+  });
+}
+
+function segs(id, key){
+  $("#"+id).addEventListener("click", e=>{
+    const b = e.target.closest("button"); if(!b) return;
+    state[key] = b.dataset.v;
+    [...$("#"+id).children].forEach(c=>c.setAttribute("aria-pressed", c===b));
+    state.overrides = {};
+    render();
+  });
+}
+
+function hoursNow(){ return Math.max(0, Number($("#hours").value)||0); }
+function visitsNow(){ return Math.round(hoursNow() * VISITS_PER_HOUR * MONTHS); }
+
+function render(){
+  const h = HOSPITALS[state.hosp];
+  const hrs = hoursNow();
+  const v = visitsNow();
+  const perMonth = hrs * VISITS_PER_HOUR;
+  if(document.activeElement !== $("#vpm")) $("#vpm").value = perMonth;
+  $("#visits").textContent = num(v);
+  $("#visitsmeta").textContent = num(perMonth) + "/mo × 12 months"
+    + (hrs < MIN_HOURS_MONTH ? " · below the 32-hour minimum" : "");
+
+  // coverage pills
+  const cov = $("#cov"); cov.innerHTML = "";
+  let covered = 0;
+  GENERIC.forEach(c=>{
+    const s = studyRate(h, c.id);
+    const p = document.createElement("span");
+    p.className = "pill" + (s ? " on":"");
+    p.textContent = c.name.split(" (")[0] + (s ? " ✓" : " — generic");
+    if(s) covered++;
+    cov.appendChild(p);
+  });
+  $("#covnote").innerHTML = "<strong>"+covered+" of 8</strong> service categories priced from "
+    + h.n + "'s own study data" + (covered<8 ? "; the remaining "+(8-covered)+" use generic model defaults." : ".");
+
+  // services table
+  const body = $("#svcbody"); body.innerHTML = "";
+  let svcRev = 0, svcOrders = 0; const flagged = [];
+  GENERIC.forEach(c=>{
+    const s = studyRate(h, c.id);
+    const base = s ? s.rate : c.rate;
+    const rate = (state.overrides[c.id]!==undefined) ? state.overrides[c.id] : base;
+    const perVisit = c.orders / BASE_VISITS;
+    const projOrders = perVisit * v;
+    const rev = projOrders * rate;
+    const on = !state.off[c.id];
+    if(on){ svcRev += rev; svcOrders += projOrders; }
+
+    const overridden = state.overrides[c.id]!==undefined;
+    const ratio = s ? (s.rate / c.rate) : 1;
+    const wide  = s && !overridden && (ratio >= 3 || ratio <= 0.34);
+    if(wide) flagged.push(c.name);
+
+    const tr = document.createElement("tr");
+    if(!on) tr.className = "off";
+    tr.innerHTML =
+      '<td class="l"><span class="catname">'+c.name+'</span> '
+        + (s ? '<span class="badge b-study">Study</span>' : '<span class="badge b-gen">Generic</span>')
+        + (wide ? ' <span class="badge b-warn">'+ratio.toFixed(1)+'× generic</span>' : '')
+        + '<div class="cptlist">' + (s
+            ? 'CPT ' + s.codes.join(", ") + ' · ' + s.n + ' contracted rate' + (s.n===1?"":"s")
+              + (wide ? '<br>Only these CPTs were studied — they may not represent all '
+                        + num(c.orders/BASE_VISITS*v) + ' orders in this category.' : '')
+              + '<br><button class="revert" data-revert="'+c.id+'">'
+              + (overridden ? 'restore study rate ' + money2(s.rate) : 'use generic ' + money2(c.rate))
+              + '</button>'
+            : c.note) + '</div></td>'
+    + '<td class="hide-sm">'+perVisit.toFixed(3)+'</td>'
+    + '<td><input type="number" min="0" step="1" value="'+Math.round(rate*100)/100+'" data-cat="'+c.id+'"></td>'
+    + '<td class="hide-sm">'+num(projOrders)+'</td>'
+    + '<td><strong>'+money(rev)+'</strong></td>'
+    + '<td><input type="checkbox" class="chk" data-off="'+c.id+'"'+(on?" checked":"")+'></td>';
+    body.appendChild(tr);
+  });
+  const origin = ORIGINATION_FEE * v;
+  const trO = document.createElement("tr");
+  trO.innerHTML = '<td class="l"><span class="catname">Originating-site facility fee</span> '
+    + '<span class="badge b-gen">Generic</span><div class="cptlist">'+money2(ORIGINATION_FEE)+' per telehealth visit</div></td>'
+    + '<td class="hide-sm">1.000</td><td>'+money2(ORIGINATION_FEE)+'</td>'
+    + '<td class="hide-sm">'+num(v)+'</td><td><strong>'+money(origin)+'</strong></td><td></td>';
+  body.appendChild(trO);
+  svcRev += origin; svcOrders += v;
+
+  $("#svctot").textContent = money(svcRev);
+  $("#svcorders").textContent = num(svcOrders);
+
+  const warn = $("#svcwarn");
+  if(flagged.length){
+    warn.style.display = "block";
+    warn.innerHTML = "<strong>Check these before quoting: "+flagged.join(", ")+".</strong> "
+      + "The study priced only a few CPTs in "+(flagged.length===1?"this category":"these categories")
+      + ", and they sit far from the generic blended rate — applying them to the full category volume "
+      + "can overstate revenue badly. Use the per-row link to switch back to the generic rate, or type "
+      + "your own blended rate.";
+  } else { warn.style.display = "none"; }
+
+  // rx table
+  const rb = $("#rxbody"); rb.innerHTML = "";
+  let rxRev = 0, rxOrders = 0;
+  // generic model shifts half of infusion + injectable volume into oral
+  const raw = RX.map(c=>c.orders/BASE_VISITS);
+  const shift = raw[0]*0.5 + raw[1]*0.5;
+  const adj = [raw[0]*0.5, raw[1]*0.5, raw[2]+shift];
+  RX.forEach((c,i)=>{
+    const price = (state.rxOverrides[c.id]!==undefined) ? state.rxOverrides[c.id] : c.price;
+    const projOrders = adj[i]*v;
+    const rev = projOrders*price;
+    const on = !state.rxOff[c.id];
+    if(on){ rxRev += rev; rxOrders += projOrders; }
+    const tr = document.createElement("tr");
+    if(!on) tr.className="off";
+    tr.innerHTML = '<td class="l"><span class="catname">'+c.name+'</span> '
+      + '<span class="badge b-rx">Generic</span></td>'
+      + '<td class="hide-sm">'+adj[i].toFixed(3)+'</td>'
+      + '<td><input type="number" min="0" step="1" value="'+price+'" data-rx="'+c.id+'"></td>'
+      + '<td class="hide-sm">'+num(projOrders)+'</td>'
+      + '<td><strong>'+money(rev)+'</strong></td>'
+      + '<td><input type="checkbox" class="chk" data-rxoff="'+c.id+'"'+(on?" checked":"")+'></td>';
+    rb.appendChild(tr);
+  });
+  $("#rxtot").textContent = money(rxRev);
+  $("#rxorders").textContent = num(rxOrders);
+
+  // totals
+  $("#c1").textContent = money(svcRev);
+  $("#c1m").textContent = covered+"/8 categories from study data";
+  $("#c2").textContent = money(rxRev);
+  $("#c3").textContent = money(svcRev + rxRev);
+  $("#c3m").textContent = num(hrs)+" hrs/mo · "+num(v)+" visits/yr";
+  $("#totalsTop").style.marginTop = "0";
+
+
+  const basisTxt = state.basis==="neg"
+    ? "the rates "+h.n+" has actually negotiated"
+    : "the best rate any competitor in its market has negotiated (payment upside)";
+  const setTxt = state.setting==="op" ? "outpatient contracts only" : "outpatient and inpatient contracts blended";
+  $("#summary").innerHTML = "<strong>"+h.n+"</strong> — "+money(svcRev+rxRev)
+    + " projected annual revenue on "+num(hrs)+" purchased hours/month ("
+    + num(v)+" visits/yr), priced on "+basisTxt
+    + " ("+setTxt+").";
+
+  $("#foot").innerHTML = "Rates derived from the TORCh Hospital Price Studies workbook (deidentified): "
+    + "each category is the mean contracted rate across every matching CPT, payer and setting on that "
+    + "hospital's tab. Categories with no matching CPT fall back to the generic Rural Health Hub model. "
+    + "Order mix per visit, the $31 originating-site fee and all 340B margins are generic model assumptions, "
+    + "not study data. Figures are planning estimates, not a guarantee of payment.";
+}
+
+// event delegation for the editable rate inputs
+document.addEventListener("input", e=>{
+  const t = e.target;
+  if(t.dataset.cat){ state.overrides[t.dataset.cat] = Number(t.value)||0; render(); }
+  else if(t.dataset.rx){ state.rxOverrides[t.dataset.rx] = Number(t.value)||0; render(); }
+  else if(t.id==="hours"){ render(); }
+  else if(t.id==="vpm"){
+    const vm = Math.max(0, Number(t.value)||0);
+    $("#hours").value = Math.round((vm / VISITS_PER_HOUR) * 100) / 100;
+    render();
+  }
+});
+document.addEventListener("change", e=>{
+  const t = e.target;
+  if(t.dataset.off){ state.off[t.dataset.off] = !t.checked; render(); }
+  else if(t.dataset.rxoff){ state.rxOff[t.dataset.rxoff] = !t.checked; render(); }
+});
+document.addEventListener("click", e=>{
+  const b = e.target.closest("[data-revert]"); if(!b) return;
+  const id = b.dataset.revert;
+  if(state.overrides[id]!==undefined) delete state.overrides[id];
+  else state.overrides[id] = GENERIC.find(g=>g.id===id).rate;
+  render();
+});
+$("#resetsvc").addEventListener("click", ()=>{ state.overrides = {}; render(); });
+
+buildHospitalList();
+segs("basis","basis");
+segs("setting","setting");
+render();
+</script>
+</body>
+</html>
